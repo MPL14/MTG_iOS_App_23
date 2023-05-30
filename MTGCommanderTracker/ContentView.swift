@@ -1,6 +1,9 @@
+
+import SwiftUI
 import SwiftUI
 
 struct ContentView: View {
+    @AppStorage("counters") private var countersData: Data = Data()
     @State private var counters: [Counter] = []
     @State private var newCounterTitle: String = ""
     @State private var newCounterValue: String = ""
@@ -11,7 +14,15 @@ struct ContentView: View {
             VStack {
                 List {
                     ForEach(counters.indices, id: \.self) { index in
-                        CounterView(counter: $counters[index])
+                        CounterView(counter: Binding(
+                            get: { self.counters[index] },
+                            set: { newValue in
+                                self.counters[index] = newValue
+                                if let encoded = try? JSONEncoder().encode(self.counters) {
+                                    countersData = encoded
+                                }
+                            }
+                        ))
                     }
                     .onDelete(perform: removeCounter)
                 }
@@ -25,7 +36,7 @@ struct ContentView: View {
                         .cornerRadius(8)
                 }
             }
-            .navigationTitle("Tracker")
+            .navigationTitle("MTG Tracker")
             .sheet(isPresented: $showingAddCounter, content: {
                 GeometryReader { geometry in
                     VStack {
@@ -58,6 +69,9 @@ struct ContentView: View {
                                 newCounterTitle = ""
                                 newCounterValue = ""
                                 showingAddCounter.toggle()
+                                if let encoded = try? JSONEncoder().encode(self.counters) {
+                                    countersData = encoded
+                                }
                             }
                         }) {
                             Text("Add")
@@ -74,12 +88,17 @@ struct ContentView: View {
                     
                 }
             })
-        }
+        }.onAppear(perform: {
+            if let decoded = try? JSONDecoder().decode([Counter].self, from: countersData) {
+                self.counters = decoded
+            }
+        })
     }
     
     func removeCounter(at offsets: IndexSet) {
         counters.remove(atOffsets: offsets)
-        
+        if let encoded = try? JSONEncoder().encode(self.counters) {
+            countersData = encoded
+        }
     }
-    
 }
