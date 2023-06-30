@@ -1,5 +1,3 @@
-
-import SwiftUI
 import SwiftUI
 
 struct ContentView: View {
@@ -11,34 +9,35 @@ struct ContentView: View {
     
     var body: some View {
         NavigationView {
-            VStack {
-                List {
-                    ForEach(counters.indices, id: \.self) { index in
-                        CounterView(counter: Binding(
-                            get: { self.counters[index] },
-                            set: { newValue in
-                                self.counters[index] = newValue
-                                if let encoded = try? JSONEncoder().encode(self.counters) {
-                                    countersData = encoded
+            GeometryReader { geometry in
+                VStack {
+                    List {
+                        ForEach(counters.indices, id: \.self) { index in
+                            CounterView(counter: Binding(
+                                get: { self.counters[index] },
+                                set: { newValue in
+                                    self.counters[index] = newValue
+                                    if let encoded = try? JSONEncoder().encode(self.counters) {
+                                        countersData = encoded
+                                    }
                                 }
-                            }
-                        ))
+                            ))
+                        }
+                        .onDelete(perform: removeCounter)
                     }
-                    .onDelete(perform: removeCounter)
+                    .listStyle(PlainListStyle())
+                    
+                    Button(action: { showingAddCounter.toggle() }) {
+                        Text("Add Counter")
+                            .frame(minWidth: 0, maxWidth: .infinity, maxHeight: 48)
+                            .background(Color.black)
+                            .foregroundColor(.white)
+                            .cornerRadius(6)
+                    }
+                    .padding(.horizontal, geometry.size.width * 0.05)
                 }
-                .listStyle(PlainListStyle())
-                
-                Button(action: { showingAddCounter.toggle() }) {
-                    Text("Add Counter")
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
-                }
-            }
-            .navigationTitle("MTG Tracker")
-            .sheet(isPresented: $showingAddCounter, content: {
-                GeometryReader { geometry in
+                .navigationTitle("Tracker")
+                .sheet(isPresented: $showingAddCounter, content: {
                     VStack {
                         Text("Add a new counter")
                             .font(.headline)
@@ -53,7 +52,6 @@ struct ContentView: View {
                             .clipShape(Capsule(style: .continuous))
                         
                         TextField("Initial value", text: $newCounterValue)
-                        
                             .keyboardType(.numberPad)
                             .padding(.vertical)
                             .padding(.horizontal, 24)
@@ -79,15 +77,13 @@ struct ContentView: View {
                                 .frame(width: geometry.size.width * 0.85) // Adjust the width based on the parent view
                                 .background(Color.green)
                                 .foregroundColor(.white)
-                            
                                 .clipShape(Capsule(style: .continuous))
                         }
                     }
                     .padding(.top, 136)
                     .padding()
-                    
-                }
-            })
+                })
+            }
         }.onAppear(perform: {
             if let decoded = try? JSONDecoder().decode([Counter].self, from: countersData) {
                 self.counters = decoded
